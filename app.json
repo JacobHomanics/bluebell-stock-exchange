@@ -7,6 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "basestockexchange",
     "userInterfaceStyle": "automatic",
+    "description": "Trade tokenized stocks on Base.",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jacobhomanics.basestockexchange"
@@ -24,7 +25,12 @@
     "web": {
       "favicon": "./assets/images/favicon.png",
       "bundler": "metro",
-      "output": "single"
+      "output": "single",
+      "name": "Base Stock Exchange",
+      "shortName": "BSE",
+      "themeColor": "#0052FF",
+      "backgroundColor": "#0052FF",
+      "description": "Trade tokenized stocks on Base."
     },
     "plugins": [
       [

@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 
+import { APP_NAME } from '@/constants/brand';
 import { MainTabs } from '@/navigation/MainTabs';
 import {
   ROOT_STACK_INITIAL_ROUTE,
@@ -11,6 +12,14 @@ import { SplashScreen } from '@/screens/SplashScreen';
 import { TradeScreen } from '@/screens/TradeScreen';
 
 export { ROOT_STACK_INITIAL_ROUTE };
+
+export const rootStackScreenTitles = {
+  splash: APP_NAME,
+  login: 'Log in',
+  loginVerify: 'Verify',
+  main: APP_NAME,
+  trade: 'Trade',
+} as const;
 
 export const rootStackScreens = {
   splash: SplashScreen,

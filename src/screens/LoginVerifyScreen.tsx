@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackButton } from '@/components/BackButton';
+import { BrandLockup } from '@/components/BrandLockup';
 import { CodeDigitInputs } from '@/components/CodeDigitInputs';
 import type { AppThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -93,6 +94,9 @@ export function LoginVerifyScreen() {
       ) : null}
 
       <View style={styles.content}>
+        <View style={styles.brand}>
+          <BrandLockup layout="stack" size="md" />
+        </View>
         <Text style={styles.title}>Enter code</Text>
         <Text style={styles.subtitle}>We sent a code to {value}.</Text>
 
@@ -158,6 +162,9 @@ function createStyles(colors: AppThemeColors) {
       justifyContent: 'center',
       paddingHorizontal: 24,
       paddingBottom: 48,
+    },
+    brand: {
+      marginBottom: 32,
     },
     title: {
       fontSize: 28,

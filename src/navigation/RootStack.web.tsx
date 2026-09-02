@@ -5,6 +5,7 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 import { useIsDesktopWeb } from '@/hooks/useIsDesktopWeb';
 import {
   ROOT_STACK_INITIAL_ROUTE,
+  rootStackScreenTitles,
   rootStackScreens,
 } from '@/navigation/RootStack.shared';
 import type { RootStackParamList } from '@/navigation/types';
@@ -27,14 +28,31 @@ export function RootStack() {
             : { backgroundColor: colors.background },
       }}
     >
-      <WebStack.Screen name="splash" component={rootStackScreens.splash} />
-      <WebStack.Screen name="login" component={rootStackScreens.login} />
+      <WebStack.Screen
+        name="splash"
+        component={rootStackScreens.splash}
+        options={{ title: rootStackScreenTitles.splash }}
+      />
+      <WebStack.Screen
+        name="login"
+        component={rootStackScreens.login}
+        options={{ title: rootStackScreenTitles.login }}
+      />
       <WebStack.Screen
         name="loginVerify"
         component={rootStackScreens.loginVerify}
+        options={{ title: rootStackScreenTitles.loginVerify }}
       />
-      <WebStack.Screen name="main" component={rootStackScreens.main} />
-      <WebStack.Screen name="trade" component={rootStackScreens.trade} />
+      <WebStack.Screen
+        name="main"
+        component={rootStackScreens.main}
+        options={{ title: rootStackScreenTitles.main }}
+      />
+      <WebStack.Screen
+        name="trade"
+        component={rootStackScreens.trade}
+        options={{ title: rootStackScreenTitles.trade }}
+      />
     </WebStack.Navigator>
   );
 }

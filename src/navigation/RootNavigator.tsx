@@ -8,6 +8,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo } from 'react';
 
+import { APP_NAME } from '@/constants/brand';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useWebNavigationA11yFix } from '@/hooks/useWebNavigationA11yFix';
@@ -78,6 +79,12 @@ export function RootNavigator() {
       ref={navigationRef}
       linking={rootLinking}
       theme={navigationTheme}
+      documentTitle={{
+        formatter: (options) =>
+          options?.title && options.title !== APP_NAME
+            ? `${options.title} · ${APP_NAME}`
+            : APP_NAME,
+      }}
       onReady={enforceAuthRoutes}
       onStateChange={enforceAuthRoutes}
     >

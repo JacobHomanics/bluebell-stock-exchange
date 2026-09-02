@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ScreenHeader } from '@/components/ScreenHeader';
 import type { AppThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useAuth } from '@/hooks/useAuth';
@@ -114,9 +115,7 @@ export function ProfileScreen() {
           },
         ]}
       >
-        <Text style={styles.kicker}>Account</Text>
-        <Text style={styles.title}>Profile</Text>
-        <Text style={styles.body}>{accountLabel(user)}</Text>
+        <ScreenHeader subtitle={accountLabel(user)} title="Profile" />
 
         <View style={styles.walletCard}>
           <View style={styles.walletHeader}>
@@ -198,25 +197,6 @@ function createStyles(colors: AppThemeColors) {
       maxWidth: 560,
       width: '100%',
       alignSelf: 'center',
-    },
-    kicker: {
-      fontSize: 13,
-      fontWeight: '600',
-      letterSpacing: 0.6,
-      textTransform: 'uppercase',
-      color: colors.brandAccent,
-    },
-    title: {
-      fontSize: 32,
-      fontWeight: '700',
-      marginTop: 8,
-      color: colors.text,
-    },
-    body: {
-      fontSize: 16,
-      lineHeight: 24,
-      marginTop: 12,
-      color: colors.textSecondary,
     },
     walletCard: {
       marginTop: 20,

@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackButton } from '@/components/BackButton';
+import { BrandLockup } from '@/components/BrandLockup';
 import type { AppThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useIsDesktopWeb } from '@/hooks/useIsDesktopWeb';
@@ -73,6 +74,9 @@ export function LoginScreen() {
       ) : null}
 
       <View style={styles.content}>
+        <View style={styles.brand}>
+          <BrandLockup layout="stack" size="md" />
+        </View>
         <Text style={styles.title}>Log in</Text>
         <Text style={styles.subtitle}>
           Continue with email or phone number.
@@ -180,6 +184,9 @@ function createStyles(colors: AppThemeColors) {
       justifyContent: 'center',
       paddingHorizontal: 24,
       paddingBottom: 48,
+    },
+    brand: {
+      marginBottom: 32,
     },
     title: {
       fontSize: 28,

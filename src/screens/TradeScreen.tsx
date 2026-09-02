@@ -19,6 +19,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatUnits, maxUint256 } from 'viem';
 
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { TokenPicker } from '@/components/TokenPicker';
 import type { AppThemeColors } from '@/constants/theme';
 import {
@@ -281,14 +282,11 @@ export function TradeScreen() {
           </Pressable>
         </View>
 
-        <Text style={styles.kicker}>Trade</Text>
-        <Text style={styles.title}>
-          {fromAsset.symbol} → {toAsset.symbol}
-        </Text>
-        <Text style={styles.body}>
-          Stock-to-stock trades route through USDC on Base DEXs in one
-          transaction.
-        </Text>
+        <ScreenHeader
+          showBrand
+          subtitle="Stock-to-stock trades route through USDC on Base DEXs in one transaction."
+          title={`${fromAsset.symbol} → ${toAsset.symbol}`}
+        />
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -501,26 +499,6 @@ function createStyles(colors: AppThemeColors) {
     },
     pressed: {
       opacity: 0.7,
-    },
-    kicker: {
-      fontSize: 13,
-      fontWeight: '600',
-      letterSpacing: 0.6,
-      textTransform: 'uppercase',
-      color: colors.brandAccent,
-      marginTop: 8,
-    },
-    title: {
-      fontSize: 32,
-      fontWeight: '700',
-      marginTop: 8,
-      color: colors.text,
-    },
-    body: {
-      fontSize: 16,
-      lineHeight: 24,
-      marginTop: 12,
-      color: colors.textSecondary,
     },
     card: {
       marginTop: 16,

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { StockRow } from '@/components/StockRow';
 import type { AppThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -44,12 +45,10 @@ export function ExploreScreen() {
       }
       style={styles.root}
     >
-      <Text style={styles.kicker}>Browse</Text>
-      <Text style={styles.title}>Explore</Text>
-      <Text style={styles.body}>
-        Coinbase B20 tokens on Base. Tap a name to swap, including stock to
-        stock via USDC.
-      </Text>
+      <ScreenHeader
+        subtitle="Coinbase B20 tokens on Base. Tap a name to swap, including stock to stock via USDC."
+        title="Explore"
+      />
       {errorMessage ? (
         <Text style={styles.error}>{errorMessage}</Text>
       ) : isLoading ? (
@@ -87,25 +86,6 @@ function createStyles(colors: AppThemeColors) {
       maxWidth: 560,
       width: '100%',
       alignSelf: 'center',
-    },
-    kicker: {
-      fontSize: 13,
-      fontWeight: '600',
-      letterSpacing: 0.6,
-      textTransform: 'uppercase',
-      color: colors.brandAccent,
-    },
-    title: {
-      fontSize: 32,
-      fontWeight: '700',
-      marginTop: 8,
-      color: colors.text,
-    },
-    body: {
-      fontSize: 16,
-      lineHeight: 24,
-      marginTop: 12,
-      color: colors.textSecondary,
     },
     error: {
       marginTop: 12,
