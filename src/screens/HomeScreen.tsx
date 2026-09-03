@@ -28,8 +28,18 @@ import { formatUsd } from '@/lib/stocks/fetchQuotes';
 import type { RootStackParamList } from '@/navigation/types';
 
 const HOME_TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'portfolio', label: 'Portfolio' },
+  {
+    id: 'overview',
+    label: 'Overview',
+    icon: 'pie-chart-outline',
+    iconSelected: 'pie-chart',
+  },
+  {
+    id: 'portfolio',
+    label: 'Portfolio',
+    icon: 'list-outline',
+    iconSelected: 'list',
+  },
 ] as const;
 
 type HomeTabId = (typeof HOME_TABS)[number]['id'];

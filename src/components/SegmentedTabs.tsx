@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -7,6 +8,8 @@ import { useAppTheme } from '@/hooks/useAppTheme';
 export type SegmentedTab<T extends string> = {
   id: T;
   label: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconSelected?: keyof typeof Ionicons.glyphMap;
 };
 
 type SegmentedTabsProps<T extends string> = {
@@ -48,6 +51,15 @@ export function SegmentedTabs<T extends string>({
               pressed && styles.pressed,
             ]}
           >
+            {tab.icon ? (
+              <Ionicons
+                color={selected ? colors.onBrand : colors.textMuted}
+                name={
+                  selected ? (tab.iconSelected ?? tab.icon) : tab.icon
+                }
+                size={16}
+              />
+            ) : null}
             <Text style={[styles.label, selected && styles.labelSelected]}>
               {tab.label}
             </Text>
@@ -72,7 +84,10 @@ function createStyles(colors: AppThemeColors) {
     },
     tab: {
       flex: 1,
+      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
       paddingVertical: 10,
       borderRadius: 10,
     },

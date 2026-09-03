@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-const STYLE_ID = 'base-stock-exchange-web-viewport';
+const STYLE_ID = 'bluebell-stock-exchange-web-viewport';
 
 /**
  * Constrain the web document to the dynamic viewport so absolute-fill overlays

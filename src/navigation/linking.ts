@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 
 import type { RootStackParamList } from '@/navigation/types';
 
-export const APP_SCHEME = 'basestockexchange';
+export const APP_SCHEME = 'bluebellstockexchange';
 
 export const APP_ORIGIN =
   process.env.EXPO_PUBLIC_APP_ORIGIN?.replace(/\/$/, '') ?? '';

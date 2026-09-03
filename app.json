@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "Base Stock Exchange",
-    "slug": "base-stock-exchange",
+    "name": "Bluebell Stock Exchange",
+    "slug": "bluebell-stock-exchange",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "basestockexchange",
+    "scheme": "bluebellstockexchange",
     "userInterfaceStyle": "automatic",
     "description": "Trade tokenized stocks on Base.",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.jacobhomanics.basestockexchange"
+      "bundleIdentifier": "com.jacobhomanics.bluebellstockexchange"
     },
     "android": {
-      "package": "com.jacobhomanics.basestockexchange",
+      "package": "com.jacobhomanics.bluebellstockexchange",
       "adaptiveIcon": {
-        "backgroundColor": "#0052FF",
+        "backgroundColor": "#4A4FBF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -26,17 +26,17 @@
       "favicon": "./assets/images/favicon.png",
       "bundler": "metro",
       "output": "single",
-      "name": "Base Stock Exchange",
+      "name": "Bluebell Stock Exchange",
       "shortName": "BSE",
-      "themeColor": "#0052FF",
-      "backgroundColor": "#0052FF",
+      "themeColor": "#4A4FBF",
+      "backgroundColor": "#4A4FBF",
       "description": "Trade tokenized stocks on Base."
     },
     "plugins": [
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0052FF",
+          "backgroundColor": "#4A4FBF",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200
         }

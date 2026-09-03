@@ -1,4 +1,4 @@
-import Svg, { Line, Rect } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { APP_LOCKUP_NAME } from '@/constants/brand';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -27,36 +27,18 @@ export function BrandMark({
       width={size}
     >
       <Rect fill={background} height={32} rx={8} width={32} x={0} y={0} />
-      <Line
+      <Path
+        d="M13.1 9.7c0-1.9 1.3-3.3 2.9-3.3s2.9 1.4 2.9 3.3"
+        fill="none"
         stroke={foreground}
         strokeLinecap="round"
-        strokeWidth={1.6}
-        x1={8.5}
-        x2={8.5}
-        y1={15}
-        y2={24}
+        strokeWidth={2}
       />
-      <Rect fill={foreground} height={5} rx={0.6} width={4} x={6.5} y={17.5} />
-      <Line
-        stroke={foreground}
-        strokeLinecap="round"
-        strokeWidth={1.6}
-        x1={16}
-        x2={16}
-        y1={10}
-        y2={22.5}
+      <Path
+        d="M10.4 13.6c0-3.2 2.45-5.35 5.6-5.35s5.6 2.15 5.6 5.35v5.05l2.45 2.85c.4.46.12 1.2-.5 1.2H8.45c-.62 0-.9-.74-.5-1.2l2.45-2.85V13.6Z"
+        fill={foreground}
       />
-      <Rect fill={foreground} height={8} rx={0.6} width={4} x={14} y={12} />
-      <Line
-        stroke={foreground}
-        strokeLinecap="round"
-        strokeWidth={1.6}
-        x1={23.5}
-        x2={23.5}
-        y1={6.5}
-        y2={18}
-      />
-      <Rect fill={foreground} height={9} rx={0.6} width={4} x={21.5} y={7.5} />
+      <Circle cx={16} cy={25} fill={foreground} r={1.7} />
     </Svg>
   );
 }

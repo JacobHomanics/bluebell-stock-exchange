@@ -1,4 +1,4 @@
-# Base Stock Exchange
+# Bluebell Stock Exchange
 
 Expo app for iOS, Android, and web. Navigation and Privy login follow the same setup as the wallet and Disgo consumer apps.
 

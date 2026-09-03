@@ -1,5 +1,7 @@
 import type { ColorSchemeName } from 'react-native';
 
+import { APP_BRAND_ACCENT_DARK_HEX, APP_BRAND_HEX } from '@/constants/brand';
+
 export type ResolvedColorScheme = 'light' | 'dark';
 
 export function resolveColorScheme(
@@ -31,8 +33,8 @@ const LIGHT_THEME: AppThemeColors = {
   text: '#0a0a0a',
   textSecondary: '#4a5568',
   textMuted: '#8892a4',
-  brand: '#0052FF',
-  brandAccent: '#0052FF',
+  brand: APP_BRAND_HEX,
+  brandAccent: APP_BRAND_HEX,
   onBrand: '#ffffff',
   error: '#b42318',
   tabBarBackground: '#ffffff',
@@ -47,8 +49,8 @@ const DARK_THEME: AppThemeColors = {
   text: '#f5f7fb',
   textSecondary: '#c5cddb',
   textMuted: '#8b95a8',
-  brand: '#0052FF',
-  brandAccent: '#5b8cff',
+  brand: APP_BRAND_HEX,
+  brandAccent: APP_BRAND_ACCENT_DARK_HEX,
   onBrand: '#ffffff',
   error: '#ff6b6b',
   tabBarBackground: '#151b28',

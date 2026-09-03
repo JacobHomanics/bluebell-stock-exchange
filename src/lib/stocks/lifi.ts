@@ -2,7 +2,7 @@ import { formatUnits, getAddress, isAddress, type Address, type Hex } from 'viem
 
 const LIFI_QUOTE_URL = 'https://li.quest/v1/quote';
 const BASE_CHAIN_ID = '8453';
-const INTEGRATOR = 'base-stock-exchange';
+const INTEGRATOR = 'bluebell-stock-exchange';
 const SLIPPAGE = 0.01;
 
 type LifiToken = {
