@@ -169,8 +169,8 @@ export function TradeScreen() {
   const sameAsset = fromAsset.id === toAsset.id;
   const exceedsBalance = amountAsUsd
     ? parsedUsd != null &&
-      fromBalanceUsd != null &&
-      parsedUsd > fromBalanceUsd + 0.005
+    fromBalanceUsd != null &&
+    parsedUsd > fromBalanceUsd + 0.005
     : convertedAmount != null && convertedAmount > fromBalance;
   const parsedAmount =
     convertedAmount == null || exceedsBalance
@@ -364,8 +364,8 @@ export function TradeScreen() {
   const balancePrimaryLabel = amountAsUsd
     ? fromBalanceUsd == null
       ? '—'
-      : formatUsd(fromBalanceUsd)
-    : `${formatQuoteAmount(fromBalance, fromAsset.decimals)} ${fromAsset.symbol}`;
+      : `${formatUsd(fromBalanceUsd)} available`
+    : `${formatQuoteAmount(fromBalance, fromAsset.decimals)} ${fromAsset.symbol} available`;
   const balanceSecondaryLabel = !fromIsStock
     ? null
     : amountAsUsd
@@ -527,15 +527,6 @@ export function TradeScreen() {
             />
           </View>
 
-          {quote ? (
-            <Text style={styles.quoteLine}>
-              Min {formatQuoteAmount(quote.toAmountMin, quote.toDecimals)}{' '}
-              {toAsset.symbol}
-              {' · '}
-              {quote.routeLabel}
-            </Text>
-          ) : null}
-
           {exceedsBalance && address ? (
             <Text style={styles.error}>Not enough {fromAsset.symbol}.</Text>
           ) : null}
@@ -662,7 +653,7 @@ function createStyles(colors: AppThemeColors) {
     paySection: {
       flex: 1,
       alignItems: 'center',
-      paddingTop: 28,
+      paddingTop: 92,
     },
     amountRow: {
       flexDirection: 'row',
@@ -771,12 +762,6 @@ function createStyles(colors: AppThemeColors) {
       marginTop: 2,
       fontSize: 13,
       color: colors.textSecondary,
-    },
-    quoteLine: {
-      fontSize: 13,
-      lineHeight: 18,
-      color: colors.textSecondary,
-      paddingHorizontal: 4,
     },
     chip: {
       flexDirection: 'row',
