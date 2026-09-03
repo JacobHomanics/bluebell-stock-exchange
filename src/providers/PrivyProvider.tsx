@@ -15,7 +15,17 @@ export function PrivyProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ExpoPrivyProvider appId={appId} clientId={clientId}>
+    <ExpoPrivyProvider
+      appId={appId}
+      clientId={clientId}
+      config={{
+        embedded: {
+          ethereum: {
+            createOnLogin: 'users-without-wallets',
+          },
+        },
+      }}
+    >
       <PrivyElements />
       {children}
     </ExpoPrivyProvider>

@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { APP_NAME } from '@/constants/brand';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useAuth } from '@/hooks/useAuth';
+import { useEnsureEmbeddedWallet } from '@/hooks/useEnsureEmbeddedWallet';
 import { useWebNavigationA11yFix } from '@/hooks/useWebNavigationA11yFix';
 import { rootLinking } from '@/navigation/linking';
 import { RootStack } from '@/navigation/RootStack';
@@ -20,6 +21,7 @@ export function RootNavigator() {
   const navigationRef = useNavigationContainerRef<RootStackParamList>();
   const { isReady, isAuthenticated } = useAuth();
   const { colors, isDark } = useAppTheme();
+  useEnsureEmbeddedWallet();
   useWebNavigationA11yFix(navigationRef);
 
   const navigationTheme = useMemo(() => {

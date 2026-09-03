@@ -23,6 +23,7 @@ import type { AppThemeColors } from '@/constants/theme';
 import { USDC_ON_BASE } from '@/constants/tradeAssets';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useTokenizedStockPortfolio } from '@/hooks/useTokenizedStockPortfolio';
+import { useUsdcOnramp } from '@/hooks/useUsdcOnramp';
 import { formatShares } from '@/lib/stocks/fetchBalances';
 import { formatUsd } from '@/lib/stocks/fetchQuotes';
 import type { RootStackParamList } from '@/navigation/types';
@@ -62,9 +63,43 @@ export function HomeScreen() {
     isRefreshing,
     refresh,
   } = useTokenizedStockPortfolio();
+  const { startOnramp } = useUsdcOnramp();
   const [infoVisible, setInfoVisible] = useState(false);
   const [usdcLogoFailed, setUsdcLogoFailed] = useState(false);
   const [homeTab, setHomeTab] = useState<HomeTabId>('overview');
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [depositError, setDepositError] = useState<string | null>(null);
+
+  const handleDeposit = async () => {
+    if (isDepositing) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      navigation.getParent()?.navigate('login');
+      return;
+    }
+
+    if (!owner) {
+      setDepositError('No wallet is linked to this account yet.');
+      return;
+    }
+
+    setDepositError(null);
+    setIsDepositing(true);
+
+    try {
+      await startOnramp(owner);
+      refresh();
+    } catch (error) {
+      console.error(error);
+      if (!isOnrampClosedError(error)) {
+        setDepositError('Could not start deposit. Please try again.');
+      }
+    } finally {
+      setIsDepositing(false);
+    }
+  };
 
   const portfolioCaption = !isAuthenticated
     ? 'Sign in to see holdings of Coinbase B20 tokens.'
@@ -107,38 +142,65 @@ export function HomeScreen() {
         {homeTab === 'overview' ? (
           <View style={styles.tabPanel}>
             <View style={styles.balanceCard}>
-              <View
-                accessibilityLabel={
-                  owner
-                    ? `Balance ${formatUsd(totalUsd)}, ${formatUsd(usdcAmount)} USDC`
-                    : `Balance ${formatUsd(totalUsd)}`
-                }
-              >
+              <View>
                 <View style={styles.balanceHeader}>
-                  <Text style={styles.balanceLabel}>Balance</Text>
+                  <View style={styles.balanceTitle}>
+                    <Text style={styles.balanceLabel}>Balance</Text>
+                    <Pressable
+                      accessibilityLabel="About this balance"
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      onPress={() => {
+                        setInfoVisible(true);
+                      }}
+                      style={({ pressed }) => pressed && styles.pressed}
+                    >
+                      <Ionicons
+                        color={colors.textMuted}
+                        name="information-circle-outline"
+                        size={20}
+                      />
+                    </Pressable>
+                  </View>
                   <Pressable
-                    accessibilityLabel="About this balance"
+                    accessibilityLabel="Deposit USDC"
                     accessibilityRole="button"
-                    hitSlop={8}
+                    disabled={isDepositing}
                     onPress={() => {
-                      setInfoVisible(true);
+                      void handleDeposit();
                     }}
-                    style={({ pressed }) => pressed && styles.pressed}
+                    style={({ pressed }) => [
+                      styles.depositButton,
+                      isDepositing && styles.buttonDisabled,
+                      pressed && !isDepositing && styles.buttonPressed,
+                    ]}
                   >
-                    <Ionicons
-                      color={colors.textMuted}
-                      name="information-circle-outline"
-                      size={20}
-                    />
+                    {isDepositing ? (
+                      <ActivityIndicator color={colors.onBrand} />
+                    ) : (
+                      <Text style={styles.depositButtonText}>Deposit</Text>
+                    )}
                   </Pressable>
                 </View>
                 {isLoading ? (
-                  <View style={styles.loadingRow}>
+                  <View
+                    accessibilityLabel="Loading balance"
+                    style={styles.loadingRow}
+                  >
                     <ActivityIndicator />
                     <Text style={styles.loadingText}>Loading balance</Text>
                   </View>
                 ) : (
-                  <Text style={styles.balanceValue}>{formatUsd(totalUsd)}</Text>
+                  <Text
+                    accessibilityLabel={
+                      owner
+                        ? `Balance ${formatUsd(totalUsd)}, ${formatUsd(usdcAmount)} USDC`
+                        : `Balance ${formatUsd(totalUsd)}`
+                    }
+                    style={styles.balanceValue}
+                  >
+                    {formatUsd(totalUsd)}
+                  </Text>
                 )}
               </View>
               <Pressable
@@ -179,6 +241,10 @@ export function HomeScreen() {
 
             {owner && !isLoading ? (
               <BalanceChart points={balanceHistory} />
+            ) : null}
+
+            {depositError ? (
+              <Text style={styles.error}>{depositError}</Text>
             ) : null}
 
             {errorMessage ? (
@@ -286,7 +352,15 @@ function createStyles(colors: AppThemeColors) {
     balanceHeader: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    balanceTitle: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: 6,
+      flex: 1,
+      minWidth: 0,
     },
     balanceLabel: {
       fontSize: 13,
@@ -352,6 +426,27 @@ function createStyles(colors: AppThemeColors) {
       color: colors.textSecondary,
       fontVariant: ['tabular-nums'],
     },
+    depositButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 88,
+      minHeight: 32,
+      backgroundColor: colors.brand,
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      borderRadius: 8,
+    },
+    buttonDisabled: {
+      opacity: 0.45,
+    },
+    buttonPressed: {
+      opacity: 0.85,
+    },
+    depositButtonText: {
+      color: colors.onBrand,
+      fontSize: 13,
+      fontWeight: '600',
+    },
     caption: {
       fontSize: 14,
       lineHeight: 20,
@@ -395,9 +490,6 @@ function createStyles(colors: AppThemeColors) {
       paddingVertical: 12,
       borderRadius: 10,
     },
-    buttonPressed: {
-      opacity: 0.85,
-    },
     modalButtonText: {
       color: colors.onBrand,
       fontSize: 16,
@@ -423,4 +515,9 @@ function createStyles(colors: AppThemeColors) {
       gap: 10,
     },
   });
+}
+
+function isOnrampClosedError(error: unknown): boolean {
+  const text = error instanceof Error ? error.message : String(error);
+  return /exited flow|cancel|closed|dismiss|abort/i.test(text);
 }
