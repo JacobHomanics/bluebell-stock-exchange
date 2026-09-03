@@ -2,7 +2,7 @@ import { useFundWallet } from '@privy-io/expo/ui';
 import { useCallback } from 'react';
 import { base } from 'viem/chains';
 
-const DEFAULT_USDC_AMOUNT = '50';
+const DEFAULT_USDC_AMOUNT = '5';
 
 export function useUsdcOnramp() {
   const { fundWallet } = useFundWallet();
