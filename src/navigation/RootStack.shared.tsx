@@ -9,6 +9,7 @@ import {
 import { LoginScreen } from '@/screens/LoginScreen';
 import { LoginVerifyScreen } from '@/screens/LoginVerifyScreen';
 import { SplashScreen } from '@/screens/SplashScreen';
+import { TradeConfirmScreen } from '@/screens/TradeConfirmScreen';
 import { TradeScreen } from '@/screens/TradeScreen';
 
 export { ROOT_STACK_INITIAL_ROUTE };
@@ -19,6 +20,7 @@ export const rootStackScreenTitles = {
   loginVerify: 'Verify',
   main: APP_NAME,
   trade: 'Trade',
+  tradeConfirm: 'Confirm',
 } as const;
 
 export const rootStackScreens = {
@@ -27,4 +29,5 @@ export const rootStackScreens = {
   loginVerify: LoginVerifyScreen,
   main: MainTabs,
   trade: TradeScreen,
+  tradeConfirm: TradeConfirmScreen,
 } as const satisfies Record<keyof RootStackParamList, ComponentType<object>>;

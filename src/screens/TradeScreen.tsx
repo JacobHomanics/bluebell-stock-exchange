@@ -2,124 +2,44 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import * as Linking from 'expo-linking';
-import { useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { formatUnits, maxUint256 } from 'viem';
 
+import { AssetChip } from '@/components/AssetChip';
+import { NumericKeypad } from '@/components/NumericKeypad';
 import { TokenPicker } from '@/components/TokenPicker';
 import type { AppThemeColors } from '@/constants/theme';
-import {
-  getTradeAsset,
-  TRADE_ASSETS,
-  USDC_ON_BASE,
-  type TradeAsset,
-} from '@/constants/tradeAssets';
+import { TRADE_ASSETS, type TradeAsset } from '@/constants/tradeAssets';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useAuth } from '@/hooks/useAuth';
 import { useSwapQuote } from '@/hooks/useSwapQuote';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { useTokenizedStockQuotes } from '@/hooks/useTokenizedStockQuotes';
 import { useWalletTransaction } from '@/hooks/useWalletTransaction';
+import { formatUsd } from '@/lib/stocks/fetchQuotes';
+import { formatQuoteAmount, toSwapQuoteSnapshot } from '@/lib/stocks/lifi';
 import {
-  basePublicClient,
-  waitForSuccessReceipt,
-} from '@/lib/stocks/baseClient';
-import {
-  encodeApprove,
-  readAllowance,
-  waitForAllowance,
-} from '@/lib/stocks/erc20';
-import { formatUsd, type StockQuote } from '@/lib/stocks/fetchQuotes';
-import { fetchSwapQuote, formatQuoteAmount, SwapQuoteError } from '@/lib/stocks/lifi';
-import {
+  applyAmountKey,
   formatTokenAmountInput,
   formatUsdAmountInput,
   parseAmountInput,
   parseUsdInput,
   tokenAmountToUsd,
+  USD_INPUT_DECIMALS,
   usdInputToTokenAmount,
+  type AmountKeypadKey,
 } from '@/lib/stocks/parseAmount';
+import {
+  assetPriceUsd,
+  defaultFromAsset,
+  defaultToAsset,
+  inputAssetUsdValue,
+  type TradeInputUnit,
+} from '@/lib/stocks/trade';
 import type { RootStackParamList } from '@/navigation/types';
 
 type PickerTarget = 'from' | 'to' | null;
-type SwapPhase = 'idle' | 'approving' | 'swapping' | 'done';
-type InputUnit = 'usd' | 'token';
-
-function defaultFromAsset(fromSymbol?: string): TradeAsset {
-  return getTradeAsset(fromSymbol) ?? USDC_ON_BASE;
-}
-
-function swapErrorMessage(error: unknown): string {
-  if (error instanceof SwapQuoteError) {
-    return error.message;
-  }
-
-  const text = error instanceof Error ? error.message : String(error);
-  if (text.includes('TRANSFER_FROM_FAILED')) {
-    return 'Token approval is not live yet. Wait a moment and try again.';
-  }
-  if (text.includes('Transaction reverted')) {
-    return 'The swap transaction reverted. Try a fresh quote.';
-  }
-
-  return 'Swap failed. Check gas, allowance, and try again.';
-}
-
-function inputAssetUsdValue(
-  asset: TradeAsset,
-  rawBalance: bigint,
-  quotes: readonly StockQuote[],
-): number | null {
-  const amount = Number(formatUnits(rawBalance, asset.decimals));
-  if (!Number.isFinite(amount)) {
-    return null;
-  }
-  if (asset.kind === 'cash') {
-    return amount;
-  }
-
-  const quote = quotes.find((item) => item.symbol === asset.symbol);
-  if (quote?.priceUsd == null) {
-    return null;
-  }
-
-  return amount * quote.priceUsd;
-}
-
-function assetPriceUsd(
-  asset: TradeAsset,
-  quotes: readonly StockQuote[],
-): number | null {
-  if (asset.kind === 'cash') {
-    return 1;
-  }
-
-  return quotes.find((item) => item.symbol === asset.symbol)?.priceUsd ?? null;
-}
-
-function defaultToAsset(toSymbol?: string, fromAsset?: TradeAsset): TradeAsset {
-  const requested = getTradeAsset(toSymbol);
-  if (requested && requested.id !== fromAsset?.id) {
-    return requested;
-  }
-
-  const fallback = TRADE_ASSETS.find(
-    (asset) => asset.kind === 'stock' && asset.id !== fromAsset?.id,
-  );
-  return fallback ?? TRADE_ASSETS[1] ?? USDC_ON_BASE;
-}
 
 export function TradeScreen() {
   const { colors } = useAppTheme();
@@ -129,9 +49,8 @@ export function TradeScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'trade'>>();
   const { isAuthenticated } = useAuth();
-  const { address, sendTransaction } = useWalletTransaction();
+  const { address } = useWalletTransaction();
   const { quotes } = useTokenizedStockQuotes();
-  const amountInputRef = useRef<TextInput>(null);
 
   const [fromAsset, setFromAsset] = useState(() =>
     defaultFromAsset(route.params?.fromSymbol),
@@ -140,11 +59,8 @@ export function TradeScreen() {
     defaultToAsset(route.params?.toSymbol, fromAsset),
   );
   const [amount, setAmount] = useState('');
-  const [inputUnit, setInputUnit] = useState<InputUnit>('usd');
+  const [inputUnit, setInputUnit] = useState<TradeInputUnit>('usd');
   const [picker, setPicker] = useState<PickerTarget>(null);
-  const [phase, setPhase] = useState<SwapPhase>('idle');
-  const [swapError, setSwapError] = useState<string | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
 
   const fromPriceUsd = assetPriceUsd(fromAsset, quotes);
   const fromIsStock = fromAsset.kind === 'stock';
@@ -157,7 +73,7 @@ export function TradeScreen() {
     : convertedAmount == null
       ? null
       : tokenAmountToUsd(convertedAmount, fromAsset.decimals, fromPriceUsd);
-  const { raw: fromBalance, refresh: refreshBalance } = useTokenBalance(
+  const { raw: fromBalance } = useTokenBalance(
     address,
     fromAsset.tokenAddress,
   );
@@ -185,13 +101,13 @@ export function TradeScreen() {
     Boolean(address) &&
     !exceedsBalance;
 
-  const { quote, errorMessage: quoteError, isLoading: isQuoteLoading } =
+  const { quote, errorMessage: quoteError } =
     useSwapQuote({
       fromToken: fromAsset.tokenAddress,
       toToken: toAsset.tokenAddress,
       fromAmount: parsedAmount,
       fromAddress: address,
-      enabled: canQuote && phase === 'idle',
+      enabled: canQuote,
     });
 
   const handleSelectFrom = (asset: TradeAsset) => {
@@ -202,9 +118,6 @@ export function TradeScreen() {
       setInputUnit('usd');
     }
     setFromAsset(asset);
-    setSwapError(null);
-    setTxHash(null);
-    setPhase('idle');
   };
 
   const handleSelectTo = (asset: TradeAsset) => {
@@ -215,10 +128,20 @@ export function TradeScreen() {
       setFromAsset(toAsset);
     }
     setToAsset(asset);
-    setSwapError(null);
-    setTxHash(null);
-    setPhase('idle');
   };
+
+  const amountDecimals = amountAsUsd ? USD_INPUT_DECIMALS : fromAsset.decimals;
+
+  const handleAmountKey = useCallback(
+    (key: AmountKeypadKey) => {
+      setAmount((current) => applyAmountKey(current, key, amountDecimals));
+    },
+    [amountDecimals],
+  );
+
+  const handleAmountClear = useCallback(() => {
+    setAmount('');
+  }, []);
 
   const handleMax = () => {
     if (amountAsUsd) {
@@ -249,136 +172,44 @@ export function TradeScreen() {
       }
       setInputUnit('usd');
     }
-    setPhase('idle');
-    setTxHash(null);
-    setSwapError(null);
   };
 
-  const handleSwap = async () => {
-    if (!isAuthenticated) {
-      navigation.navigate('login');
+  const handleReview = () => {
+    if (reviewDisabled) {
       return;
     }
-    if (!address || !parsedAmount || parsedAmount <= 0n || sameAsset) {
-      return;
-    }
-    if (exceedsBalance) {
-      setSwapError(`Not enough ${fromAsset.symbol}.`);
-      return;
-    }
-
-    setSwapError(null);
-    setTxHash(null);
-
-    try {
-      let nextQuote = await fetchSwapQuote({
-        fromToken: fromAsset.tokenAddress,
-        toToken: toAsset.tokenAddress,
-        fromAmount: parsedAmount,
-        fromAddress: address,
-      });
-
-      const allowance = await readAllowance(
-        fromAsset.tokenAddress,
-        address,
-        nextQuote.approvalAddress,
-      );
-
-      if (allowance < nextQuote.fromAmount) {
-        setPhase('approving');
-        const approveHash = await sendTransaction({
-          to: fromAsset.tokenAddress,
-          data: encodeApprove(nextQuote.approvalAddress, maxUint256),
-          value: 0n,
-        });
-        await waitForSuccessReceipt(approveHash, 2);
-        await waitForAllowance(
-          fromAsset.tokenAddress,
-          address,
-          nextQuote.approvalAddress,
-          nextQuote.fromAmount,
-        );
-        nextQuote = await fetchSwapQuote({
-          fromToken: fromAsset.tokenAddress,
-          toToken: toAsset.tokenAddress,
-          fromAmount: parsedAmount,
-          fromAddress: address,
-        });
-      }
-
-      setPhase('swapping');
-      await basePublicClient.call({
-        account: address,
-        to: nextQuote.transaction.to,
-        data: nextQuote.transaction.data,
-        value: nextQuote.transaction.value,
-      });
-
-      const hash = await sendTransaction(nextQuote.transaction);
-      await waitForSuccessReceipt(hash);
-      setTxHash(hash);
-      setPhase('done');
-      void refreshBalance();
-    } catch (error) {
-      console.error(error);
-      setPhase('idle');
-      setSwapError(swapErrorMessage(error));
-    }
+    navigation.navigate('tradeConfirm', {
+      fromSymbol: fromAsset.symbol,
+      toSymbol: toAsset.symbol,
+      amount,
+      inputUnit,
+      quote: quote ? toSwapQuoteSnapshot(quote) : null,
+    });
   };
 
-  const primaryDisabled =
-    phase === 'approving' ||
-    phase === 'swapping' ||
-    (isAuthenticated && !address) ||
-    (isAuthenticated &&
-      (sameAsset ||
-        parsedAmount == null ||
-        parsedAmount <= 0n ||
-        exceedsBalance ||
-        (!quote && !quoteError)));
+  const reviewDisabled =
+    sameAsset ||
+    parsedAmount == null ||
+    parsedAmount <= 0n ||
+    (Boolean(address) && exceedsBalance) ||
+    (isAuthenticated && !address);
 
-  const primaryLabel = !isAuthenticated
-    ? 'Sign in to swap'
-    : !address
-      ? 'No wallet linked'
-      : phase === 'approving'
-        ? 'Approving'
-        : phase === 'swapping'
-          ? 'Swapping'
-          : `Swap ${fromAsset.symbol} for ${toAsset.symbol}`;
+  const reviewLabel =
+    isAuthenticated && !address ? 'No wallet linked' : 'Review';
 
-  const receiveAmount = quote
-    ? formatQuoteAmount(quote.toAmount, quote.toDecimals)
-    : isQuoteLoading
-      ? '…'
-      : '0';
   const inputSecondaryLabel = !fromIsStock
     ? null
     : amountAsUsd
-      ? convertedAmount != null
-        ? `${formatQuoteAmount(convertedAmount, fromAsset.decimals)} ${fromAsset.symbol}`
-        : null
-      : parsedUsd != null
-        ? formatUsd(parsedUsd)
-        : null;
+      ? `${formatQuoteAmount(convertedAmount ?? 0n, fromAsset.decimals)} shares`
+      : formatUsd(parsedUsd ?? 0);
   const balancePrimaryLabel = amountAsUsd
     ? fromBalanceUsd == null
       ? '—'
       : `${formatUsd(fromBalanceUsd)} available`
-    : `${formatQuoteAmount(fromBalance, fromAsset.decimals)} ${fromAsset.symbol} available`;
-  const balanceSecondaryLabel = !fromIsStock
-    ? null
-    : amountAsUsd
-      ? `${formatQuoteAmount(fromBalance, fromAsset.decimals)} ${fromAsset.symbol}`
-      : fromBalanceUsd == null
-        ? '—'
-        : formatUsd(fromBalanceUsd);
+    : `${formatQuoteAmount(fromBalance, fromAsset.decimals)} shares available`;
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.root}
-    >
+    <View style={styles.root}>
       <View
         style={[
           styles.frame,
@@ -403,11 +234,10 @@ export function TradeScreen() {
         </View>
 
         <View style={styles.paySection}>
-          <Pressable
-            accessibilityRole="none"
-            onPress={() => {
-              amountInputRef.current?.focus();
-            }}
+          <View
+            accessibilityLabel={
+              amountAsUsd ? 'Amount in USD' : `Amount in ${fromAsset.symbol}`
+            }
             style={styles.amountRow}
           >
             {amountAsUsd ? (
@@ -420,37 +250,16 @@ export function TradeScreen() {
                 $
               </Text>
             ) : null}
-            <TextInput
-              accessibilityLabel={
-                amountAsUsd ? 'Amount in USD' : `Amount in ${fromAsset.symbol}`
-              }
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus
-              editable={phase === 'idle' || phase === 'done'}
-              inputMode="decimal"
-              keyboardType="decimal-pad"
-              onChangeText={(value) => {
-                setAmount(value.replace(/,/g, ''));
-                setPhase('idle');
-                setTxHash(null);
-                setSwapError(null);
-              }}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              ref={amountInputRef}
-              style={[
-                styles.amountInput,
-                { width: Math.max((amount || '0').length, 1) * 34 },
-              ]}
-              value={amount}
-            />
-          </Pressable>
+            <Text
+              selectable={false}
+              style={[styles.amountValue, !amount && styles.currencySignMuted]}
+            >
+              {amount || '0'}
+            </Text>
+          </View>
           {fromIsStock ? (
             <View style={styles.unitRow}>
-              {inputSecondaryLabel ? (
-                <Text style={styles.stockHint}>{inputSecondaryLabel}</Text>
-              ) : null}
+              <Text style={styles.stockHint}>{inputSecondaryLabel}</Text>
               <Pressable
                 accessibilityLabel={
                   amountAsUsd
@@ -474,15 +283,6 @@ export function TradeScreen() {
             </View>
           ) : null}
 
-          <View style={styles.fromAsset}>
-            <AssetChip
-              asset={fromAsset}
-              onPress={() => {
-                setPicker('from');
-              }}
-            />
-          </View>
-
           <Pressable
             accessibilityRole="button"
             onPress={handleMax}
@@ -495,29 +295,25 @@ export function TradeScreen() {
               <Text style={styles.balance}>{balancePrimaryLabel}</Text>
               <Text style={styles.maxLabel}>Max</Text>
             </View>
-            {balanceSecondaryLabel ? (
-              <Text style={[styles.stockHint, styles.balanceSecondary]}>
-                {balanceSecondaryLabel}
-              </Text>
-            ) : null}
           </Pressable>
-        </View>
 
-        <View style={styles.bottom}>
-          <View style={styles.receiveCard}>
-            <View style={styles.receiveCopy}>
-              <Text style={styles.receiveLabel}>You receive</Text>
-              <Text
-                numberOfLines={1}
-                style={styles.receiveAmount}
-              >
-                {receiveAmount}
-              </Text>
-              {quote?.toAmountUsd != null ? (
-                <Text style={styles.receiveUsd}>
-                  About {formatUsd(quote.toAmountUsd)}
-                </Text>
-              ) : null}
+          <View style={styles.route}>
+            <AssetChip
+              asset={fromAsset}
+              onPress={() => {
+                setPicker('from');
+              }}
+            />
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+              style={styles.routeArrow}
+            >
+              <Ionicons
+                color={colors.textMuted}
+                name="arrow-down"
+                size={20}
+              />
             </View>
             <AssetChip
               asset={toAsset}
@@ -526,7 +322,9 @@ export function TradeScreen() {
               }}
             />
           </View>
+        </View>
 
+        <View style={styles.bottom}>
           {exceedsBalance && address ? (
             <Text style={styles.error}>Not enough {fromAsset.symbol}.</Text>
           ) : null}
@@ -534,7 +332,6 @@ export function TradeScreen() {
             <Text style={styles.error}>Pick two different assets.</Text>
           ) : null}
           {quoteError ? <Text style={styles.error}>{quoteError}</Text> : null}
-          {swapError ? <Text style={styles.error}>{swapError}</Text> : null}
 
           {isAuthenticated && !address ? (
             <Text style={styles.hint}>
@@ -542,35 +339,26 @@ export function TradeScreen() {
             </Text>
           ) : null}
 
-          {phase === 'done' && txHash ? (
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => {
-                void Linking.openURL(`https://basescan.org/tx/${txHash}`);
-              }}
-            >
-              <Text style={styles.link}>View on Basescan</Text>
-            </Pressable>
-          ) : null}
-
           <Pressable
             accessibilityRole="button"
-            disabled={primaryDisabled}
-            onPress={() => {
-              void handleSwap();
-            }}
+            disabled={reviewDisabled}
+            onPress={handleReview}
             style={({ pressed }) => [
               styles.button,
-              primaryDisabled && styles.buttonDisabled,
-              pressed && !primaryDisabled && styles.buttonPressed,
+              reviewDisabled && styles.buttonDisabled,
+              pressed && !reviewDisabled && styles.buttonPressed,
             ]}
           >
-            {phase === 'approving' || phase === 'swapping' ? (
-              <ActivityIndicator color={colors.onBrand} />
-            ) : (
-              <Text style={styles.buttonText}>{primaryLabel}</Text>
-            )}
+            <Text style={styles.buttonText}>{reviewLabel}</Text>
           </Pressable>
+        </View>
+
+        <View style={styles.keypadSlot}>
+          <NumericKeypad
+            captureHardwareKeys={picker == null}
+            onClear={handleAmountClear}
+            onKey={handleAmountKey}
+          />
         </View>
       </View>
 
@@ -584,45 +372,7 @@ export function TradeScreen() {
         title={picker === 'to' ? 'Receive' : 'Pay with'}
         visible={picker != null}
       />
-    </KeyboardAvoidingView>
-  );
-}
-
-function AssetChip({
-  asset,
-  onPress,
-}: {
-  asset: TradeAsset;
-  onPress: () => void;
-}) {
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const [logoFailed, setLogoFailed] = useState(false);
-
-  return (
-    <Pressable
-      accessibilityLabel={`Select ${asset.symbol}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
-    >
-      {logoFailed ? (
-        <View style={styles.chipFallback}>
-          <Text style={styles.chipFallbackText}>{asset.symbol.slice(0, 1)}</Text>
-        </View>
-      ) : (
-        <Image
-          accessibilityIgnoresInvertColors
-          onError={() => {
-            setLogoFailed(true);
-          }}
-          source={{ uri: asset.logoUri }}
-          style={styles.chipLogo}
-        />
-      )}
-      <Text style={styles.chipSymbol}>{asset.symbol}</Text>
-      <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
-    </Pressable>
+    </View>
   );
 }
 
@@ -651,9 +401,8 @@ function createStyles(colors: AppThemeColors) {
       opacity: 0.7,
     },
     paySection: {
-      flex: 1,
       alignItems: 'center',
-      paddingTop: 92,
+      paddingTop: 40,
     },
     amountRow: {
       flexDirection: 'row',
@@ -669,19 +418,23 @@ function createStyles(colors: AppThemeColors) {
     currencySignMuted: {
       color: colors.textMuted,
     },
-    amountInput: {
+    amountValue: {
       fontSize: 56,
       fontWeight: '700',
       letterSpacing: -1.5,
       color: colors.text,
-      padding: 0,
       fontVariant: ['tabular-nums'],
     },
-    fromAsset: {
-      marginTop: 20,
+    route: {
+      marginTop: 14,
+      alignItems: 'center',
+      gap: 8,
+    },
+    routeArrow: {
+      paddingVertical: 2,
     },
     balanceHit: {
-      marginTop: 14,
+      marginTop: 20,
       alignItems: 'center',
     },
     balanceRow: {
@@ -723,79 +476,16 @@ function createStyles(colors: AppThemeColors) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    balanceSecondary: {
-      marginTop: 4,
+    keypadSlot: {
+      flex: 1,
+      width: '100%',
+      minHeight: 0,
+      paddingVertical: 8,
+      overflow: 'hidden',
     },
     bottom: {
       gap: 10,
-    },
-    receiveCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderWidth: 1,
-      borderRadius: 16,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-    },
-    receiveCopy: {
-      flex: 1,
-      minWidth: 0,
-    },
-    receiveLabel: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: colors.textMuted,
-      textTransform: 'uppercase',
-      letterSpacing: 0.4,
-    },
-    receiveAmount: {
-      marginTop: 4,
-      fontSize: 24,
-      fontWeight: '700',
-      color: colors.text,
-      fontVariant: ['tabular-nums'],
-    },
-    receiveUsd: {
-      marginTop: 2,
-      fontSize: 13,
-      color: colors.textSecondary,
-    },
-    chip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderWidth: 1,
-      borderRadius: 999,
-      paddingVertical: 8,
-      paddingHorizontal: 10,
-    },
-    chipLogo: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-    },
-    chipFallback: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.brand,
-    },
-    chipFallbackText: {
-      color: colors.onBrand,
-      fontSize: 12,
-      fontWeight: '700',
-    },
-    chipSymbol: {
-      color: colors.text,
-      fontSize: 15,
-      fontWeight: '700',
+      paddingTop: 12,
     },
     error: {
       fontSize: 14,
@@ -807,12 +497,6 @@ function createStyles(colors: AppThemeColors) {
       fontSize: 14,
       lineHeight: 20,
       color: colors.textSecondary,
-      paddingHorizontal: 4,
-    },
-    link: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.brandAccent,
       paddingHorizontal: 4,
     },
     button: {

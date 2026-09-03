@@ -208,3 +208,25 @@ export function formatQuoteAmount(amount: bigint, decimals: number): string {
     maximumFractionDigits,
   }).format(asNumber);
 }
+
+export type SwapQuoteSnapshot = {
+  fromAmount: string;
+  toAmount: string;
+  toAmountMin: string;
+  fromAmountUsd: number | null;
+  toAmountUsd: number | null;
+  fromDecimals: number;
+  toDecimals: number;
+};
+
+export function toSwapQuoteSnapshot(quote: LifiQuote): SwapQuoteSnapshot {
+  return {
+    fromAmount: quote.fromAmount.toString(),
+    toAmount: quote.toAmount.toString(),
+    toAmountMin: quote.toAmountMin.toString(),
+    fromAmountUsd: quote.fromAmountUsd,
+    toAmountUsd: quote.toAmountUsd,
+    fromDecimals: quote.fromDecimals,
+    toDecimals: quote.toDecimals,
+  };
+}

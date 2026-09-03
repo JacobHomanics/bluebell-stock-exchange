@@ -105,3 +105,52 @@ export function tokenAmountToUsd(
 export function isAmountInputPartial(value: string): boolean {
   return value === '' || value === '.' || /^\d+\.$/.test(value);
 }
+
+export type AmountKeypadKey =
+  | '0'
+  | '1'
+  | '2'
+  | '3'
+  | '4'
+  | '5'
+  | '6'
+  | '7'
+  | '8'
+  | '9'
+  | '.'
+  | 'backspace';
+
+const MAX_INTEGER_DIGITS = 12;
+
+/** Apply a keypad key to a decimal amount string, keeping it parseable. */
+export function applyAmountKey(
+  value: string,
+  key: AmountKeypadKey,
+  maxDecimals: number,
+): string {
+  if (key === 'backspace') {
+    const next = value.slice(0, -1);
+    return next === '0' ? '' : next;
+  }
+
+  if (key === '.') {
+    if (maxDecimals <= 0 || value.includes('.')) {
+      return value;
+    }
+    return value === '' ? '0.' : `${value}.`;
+  }
+
+  const next = value === '0' ? key : `${value}${key}`;
+  const [integer = '', fraction = ''] = next.split('.');
+  if (integer.length > MAX_INTEGER_DIGITS || fraction.length > maxDecimals) {
+    return value;
+  }
+  if (
+    !isAmountInputPartial(next) &&
+    parseAmountInput(next, maxDecimals) == null
+  ) {
+    return value;
+  }
+
+  return next;
+}

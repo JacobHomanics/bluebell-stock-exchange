@@ -42,6 +42,7 @@ export const rootLinking: LinkingOptions<RootStackParamList> = {
         },
       },
       trade: 'trade',
+      tradeConfirm: 'trade/confirm',
     },
   },
 };

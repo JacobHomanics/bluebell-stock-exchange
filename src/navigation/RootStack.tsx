@@ -48,6 +48,11 @@ export function RootStack() {
         component={rootStackScreens.trade}
         options={{ title: rootStackScreenTitles.trade }}
       />
+      <NativeStack.Screen
+        name="tradeConfirm"
+        component={rootStackScreens.tradeConfirm}
+        options={{ title: rootStackScreenTitles.tradeConfirm }}
+      />
     </NativeStack.Navigator>
   );
 }

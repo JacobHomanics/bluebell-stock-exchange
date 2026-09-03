@@ -1,6 +1,7 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 import type { LoginMethod } from '@/lib/privy/context/AuthFlowContext.shared';
+import type { SwapQuoteSnapshot } from '@/lib/stocks/lifi';
 
 export type MainTabParamList = {
   home: undefined;
@@ -19,6 +20,13 @@ export type RootStackParamList = {
   trade: {
     fromSymbol?: string;
     toSymbol?: string;
+  };
+  tradeConfirm: {
+    fromSymbol: string;
+    toSymbol: string;
+    amount: string;
+    inputUnit: 'usd' | 'token';
+    quote: SwapQuoteSnapshot | null;
   };
 };
 

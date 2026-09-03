@@ -53,6 +53,11 @@ export function RootStack() {
         component={rootStackScreens.trade}
         options={{ title: rootStackScreenTitles.trade }}
       />
+      <WebStack.Screen
+        name="tradeConfirm"
+        component={rootStackScreens.tradeConfirm}
+        options={{ title: rootStackScreenTitles.tradeConfirm }}
+      />
     </WebStack.Navigator>
   );
 }
