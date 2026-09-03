@@ -45,10 +45,7 @@ export function ExploreScreen() {
       }
       style={styles.root}
     >
-      <ScreenHeader
-        subtitle="Coinbase B20 tokens on Base. Tap a name to swap, including stock to stock via USDC."
-        title="Explore"
-      />
+      <ScreenHeader title="Explore" />
       {errorMessage ? (
         <Text style={styles.error}>{errorMessage}</Text>
       ) : isLoading ? (

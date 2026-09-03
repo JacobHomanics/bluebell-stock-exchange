@@ -2,8 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import {
   BottomTabBar,
   createBottomTabNavigator,
+  type BottomTabBarButtonProps,
   type BottomTabBarProps,
 } from '@react-navigation/bottom-tabs';
+import { PlatformPressable } from '@react-navigation/elements';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { BrandLockup } from '@/components/BrandLockup';
@@ -19,6 +21,15 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function AuthTabPlaceholder() {
   return <View />;
+}
+
+function CenteredTabButton(props: BottomTabBarButtonProps) {
+  return (
+    <PlatformPressable
+      {...props}
+      style={[props.style, styles.centeredTabButton]}
+    />
+  );
 }
 
 function DesktopTabBar(props: BottomTabBarProps) {
@@ -74,6 +85,7 @@ export function MainTabs() {
           borderBottomWidth: isDesktopWeb ? 0 : undefined,
           elevation: isDesktopWeb ? 0 : undefined,
         },
+        tabBarButton: isDesktopWeb ? undefined : CenteredTabButton,
         tabBarItemStyle: isDesktopWeb
           ? { flexGrow: 0, flexBasis: 'auto', width: 108 }
           : undefined,
@@ -154,5 +166,8 @@ const styles = StyleSheet.create({
   },
   desktopTabs: {
     flex: 1,
+  },
+  centeredTabButton: {
+    justifyContent: 'center',
   },
 });

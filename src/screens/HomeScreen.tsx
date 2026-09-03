@@ -15,7 +15,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BalanceChart } from '@/components/BalanceChart';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { SegmentedTabs } from '@/components/SegmentedTabs';
 import { StockRow } from '@/components/StockRow';
 import type { AppThemeColors } from '@/constants/theme';
 import { USDC_ON_BASE } from '@/constants/tradeAssets';
@@ -24,6 +26,13 @@ import { useTokenizedStockPortfolio } from '@/hooks/useTokenizedStockPortfolio';
 import { formatShares } from '@/lib/stocks/fetchBalances';
 import { formatUsd } from '@/lib/stocks/fetchQuotes';
 import type { RootStackParamList } from '@/navigation/types';
+
+const HOME_TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'portfolio', label: 'Portfolio' },
+] as const;
+
+type HomeTabId = (typeof HOME_TABS)[number]['id'];
 
 export function HomeScreen() {
   const { colors } = useAppTheme();
@@ -37,6 +46,7 @@ export function HomeScreen() {
     positions,
     usdcAmount,
     totalUsd,
+    balanceHistory,
     errorMessage,
     isLoading,
     isRefreshing,
@@ -44,13 +54,14 @@ export function HomeScreen() {
   } = useTokenizedStockPortfolio();
   const [infoVisible, setInfoVisible] = useState(false);
   const [usdcLogoFailed, setUsdcLogoFailed] = useState(false);
+  const [homeTab, setHomeTab] = useState<HomeTabId>('overview');
 
-  const caption = !isAuthenticated
+  const portfolioCaption = !isAuthenticated
     ? 'Sign in to see holdings of Coinbase B20 tokens.'
     : !owner
       ? 'No wallet is linked to this account yet.'
-      : positions.length === 0 && usdcAmount === 0
-        ? 'No tokenized stocks or USDC in this wallet yet. Browse Explore to see supported names.'
+      : !isLoading && positions.length === 0
+        ? 'No tokenized stocks in this wallet yet. Browse Explore to see supported names.'
         : null;
 
   return (
@@ -74,100 +85,125 @@ export function HomeScreen() {
       >
         <ScreenHeader title="Home" />
 
-        <View style={styles.balanceCard}>
-          <View
-            accessibilityLabel={
-              owner
-                ? `Balance ${formatUsd(totalUsd)}, ${formatUsd(usdcAmount)} USDC`
-                : `Balance ${formatUsd(totalUsd)}`
-            }
-          >
-            <View style={styles.balanceHeader}>
-              <Text style={styles.balanceLabel}>Balance</Text>
-              <Pressable
-                accessibilityLabel="About this balance"
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={() => {
-                  setInfoVisible(true);
-                }}
-                style={({ pressed }) => pressed && styles.pressed}
-              >
-                <Ionicons
-                  color={colors.textMuted}
-                  name="information-circle-outline"
-                  size={20}
-                />
-              </Pressable>
-            </View>
-            {isLoading ? (
-              <View style={styles.loadingRow}>
-                <ActivityIndicator />
-                <Text style={styles.loadingText}>Loading balance</Text>
-              </View>
-            ) : (
-              <Text style={styles.balanceValue}>{formatUsd(totalUsd)}</Text>
-            )}
-          </View>
-          <Pressable
-            accessibilityLabel={`${USDC_ON_BASE.symbol} ${formatUsd(usdcAmount)}`}
-            accessibilityRole="button"
-            onPress={() => {
-              navigation.getParent()?.navigate('trade', {
-                fromSymbol: 'USDC',
-              });
-            }}
-            style={({ pressed }) => [
-              styles.usdcSection,
-              pressed && styles.pressed,
-            ]}
-          >
-            <View style={styles.usdcIdentity}>
-              {usdcLogoFailed ? (
-                <View style={styles.usdcLogoFallback}>
-                  <Text style={styles.usdcLogoFallbackText}>
-                    {USDC_ON_BASE.symbol.slice(0, 1)}
-                  </Text>
-                </View>
-              ) : (
-                <Image
-                  accessibilityIgnoresInvertColors
-                  onError={() => {
-                    setUsdcLogoFailed(true);
-                  }}
-                  source={{ uri: USDC_ON_BASE.logoUri }}
-                  style={styles.usdcLogo}
-                />
-              )}
-              <Text style={styles.usdcTicker}>{USDC_ON_BASE.symbol}</Text>
-            </View>
-            <Text style={styles.usdcValue}>{formatUsd(usdcAmount)}</Text>
-          </Pressable>
-          {caption ? <Text style={styles.caption}>{caption}</Text> : null}
+        <View style={styles.tabs}>
+          <SegmentedTabs
+            accessibilityLabel="Home sections"
+            onChange={setHomeTab}
+            tabs={HOME_TABS}
+            value={homeTab}
+          />
         </View>
 
-        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-
-        {owner && positions.length > 0 ? (
-          <View style={styles.list}>
-            {positions.map((holding) => (
-              <StockRow
-                key={holding.quote.symbol}
-                detail={`${formatShares(holding.amount)} shares`}
+        {homeTab === 'overview' ? (
+          <View style={styles.tabPanel}>
+            <View style={styles.balanceCard}>
+              <View
+                accessibilityLabel={
+                  owner
+                    ? `Balance ${formatUsd(totalUsd)}, ${formatUsd(usdcAmount)} USDC`
+                    : `Balance ${formatUsd(totalUsd)}`
+                }
+              >
+                <View style={styles.balanceHeader}>
+                  <Text style={styles.balanceLabel}>Balance</Text>
+                  <Pressable
+                    accessibilityLabel="About this balance"
+                    accessibilityRole="button"
+                    hitSlop={8}
+                    onPress={() => {
+                      setInfoVisible(true);
+                    }}
+                    style={({ pressed }) => pressed && styles.pressed}
+                  >
+                    <Ionicons
+                      color={colors.textMuted}
+                      name="information-circle-outline"
+                      size={20}
+                    />
+                  </Pressable>
+                </View>
+                {isLoading ? (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator />
+                    <Text style={styles.loadingText}>Loading balance</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.balanceValue}>{formatUsd(totalUsd)}</Text>
+                )}
+              </View>
+              <Pressable
+                accessibilityLabel={`${USDC_ON_BASE.symbol} ${formatUsd(usdcAmount)}`}
+                accessibilityRole="button"
                 onPress={() => {
                   navigation.getParent()?.navigate('trade', {
-                    fromSymbol: holding.quote.symbol,
-                    toSymbol: 'USDC',
+                    fromSymbol: 'USDC',
                   });
                 }}
-                quote={holding.quote}
-                valueLabel={
-                  holding.valueUsd == null ? '—' : formatUsd(holding.valueUsd)
-                }
-              />
-            ))}
+                style={({ pressed }) => [
+                  styles.usdcSection,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View style={styles.usdcIdentity}>
+                  {usdcLogoFailed ? (
+                    <View style={styles.usdcLogoFallback}>
+                      <Text style={styles.usdcLogoFallbackText}>
+                        {USDC_ON_BASE.symbol.slice(0, 1)}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Image
+                      accessibilityIgnoresInvertColors
+                      onError={() => {
+                        setUsdcLogoFailed(true);
+                      }}
+                      source={{ uri: USDC_ON_BASE.logoUri }}
+                      style={styles.usdcLogo}
+                    />
+                  )}
+                  <Text style={styles.usdcTicker}>{USDC_ON_BASE.symbol}</Text>
+                </View>
+                <Text style={styles.usdcValue}>{formatUsd(usdcAmount)}</Text>
+              </Pressable>
+            </View>
+
+            {owner && !isLoading ? (
+              <BalanceChart points={balanceHistory} />
+            ) : null}
+
+            {errorMessage ? (
+              <Text style={styles.error}>{errorMessage}</Text>
+            ) : null}
           </View>
-        ) : null}
+        ) : (
+          <View style={styles.tabPanel}>
+            {portfolioCaption ? (
+              <Text style={styles.caption}>{portfolioCaption}</Text>
+            ) : null}
+            {owner && positions.length > 0 ? (
+              <View style={styles.list}>
+                {positions.map((holding) => (
+                  <StockRow
+                    key={holding.quote.symbol}
+                    detail={`${formatShares(holding.amount)} shares`}
+                    onPress={() => {
+                      navigation.getParent()?.navigate('trade', {
+                        fromSymbol: holding.quote.symbol,
+                        toSymbol: 'USDC',
+                      });
+                    }}
+                    quote={holding.quote}
+                    valueLabel={
+                      holding.valueUsd == null
+                        ? '—'
+                        : formatUsd(holding.valueUsd)
+                    }
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+        )}
       </ScrollView>
 
       <Modal
@@ -223,8 +259,13 @@ function createStyles(colors: AppThemeColors) {
       width: '100%',
       alignSelf: 'center',
     },
-    balanceCard: {
+    tabs: {
       marginTop: 20,
+    },
+    tabPanel: {
+      marginTop: 16,
+    },
+    balanceCard: {
       backgroundColor: colors.surface,
       borderColor: colors.border,
       borderWidth: 1,
@@ -302,7 +343,6 @@ function createStyles(colors: AppThemeColors) {
       fontVariant: ['tabular-nums'],
     },
     caption: {
-      marginTop: 10,
       fontSize: 14,
       lineHeight: 20,
       color: colors.textSecondary,
@@ -370,7 +410,6 @@ function createStyles(colors: AppThemeColors) {
       color: colors.textMuted,
     },
     list: {
-      marginTop: 20,
       gap: 10,
     },
   });

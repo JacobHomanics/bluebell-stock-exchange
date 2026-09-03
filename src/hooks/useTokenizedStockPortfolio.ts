@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { Address } from 'viem';
 
 import { useAuth } from '@/hooks/useAuth';
 import { getEthereumAddress } from '@/lib/privy/getEthereumAddress';
+import {
+  recordBalanceSnapshot,
+  type BalanceSnapshot,
+} from '@/lib/stocks/balanceHistory';
 import {
   EMPTY_BALANCES,
   fetchTokenizedStockBalances,
@@ -33,10 +38,14 @@ export function useTokenizedStockPortfolio() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [balanceHistory, setBalanceHistory] = useState<{
+    owner: Address;
+    points: BalanceSnapshot[];
+  } | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<BalanceSnapshot[] | null> => {
     if (!owner) {
-      return;
+      return null;
     }
 
     const [nextQuotes, nextBalances, nextUsdc] = await Promise.all([
@@ -49,6 +58,11 @@ export function useTokenizedStockPortfolio() {
     setFetchedBalances(nextBalances);
     setFetchedUsdc(nextUsdc);
     setFetchError(null);
+
+    return recordBalanceSnapshot(
+      owner,
+      portfolioTotalUsd(nextQuotes, nextBalances, nextUsdc),
+    );
   }, [owner]);
 
   useEffect(() => {
@@ -60,6 +74,12 @@ export function useTokenizedStockPortfolio() {
 
     const run = () =>
       load()
+        .then((series) => {
+          if (cancelled || !series) {
+            return;
+          }
+          setBalanceHistory({ owner, points: series });
+        })
         .catch((error) => {
           if (cancelled) {
             return;
@@ -91,6 +111,11 @@ export function useTokenizedStockPortfolio() {
 
     setIsRefreshing(true);
     void load()
+      .then((series) => {
+        if (series) {
+          setBalanceHistory({ owner, points: series });
+        }
+      })
       .catch((error) => {
         console.error(error);
         setFetchError('Could not load balance. Pull to retry.');
@@ -140,6 +165,8 @@ export function useTokenizedStockPortfolio() {
   );
 
   const totalUsd = stocksUsd + usdcAmount;
+  const visibleHistory =
+    owner && balanceHistory?.owner === owner ? balanceHistory.points : [];
 
   return {
     owner,
@@ -148,9 +175,34 @@ export function useTokenizedStockPortfolio() {
     positions,
     usdcAmount,
     totalUsd,
+    balanceHistory: visibleHistory,
     errorMessage,
     isLoading: Boolean(owner) && isLoading,
     isRefreshing,
     refresh,
   };
+}
+
+function portfolioTotalUsd(
+  quotes: StockQuote[],
+  balances: TokenBalance[],
+  usdcAmount: number,
+): number {
+  const amountByAddress = new Map(
+    balances.map((balance) => [
+      balance.tokenAddress.toLowerCase(),
+      balance.amount,
+    ]),
+  );
+
+  const stocksUsd = quotes.reduce((sum, quote) => {
+    if (quote.priceUsd == null) {
+      return sum;
+    }
+
+    const amount = amountByAddress.get(quote.tokenAddress.toLowerCase()) ?? 0;
+    return sum + amount * quote.priceUsd;
+  }, 0);
+
+  return stocksUsd + usdcAmount;
 }
