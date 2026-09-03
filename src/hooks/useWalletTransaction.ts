@@ -1,16 +1,18 @@
 import type { Address, Hex } from 'viem';
 import { getAddress, isAddress } from 'viem';
 
-import { useEmbeddedEthereumWallet } from '@privy-io/expo';
+import { useEmbeddedEthereumWallet, usePrivy } from '@privy-io/expo';
+
+import {
+  sendUserPaysTransaction,
+  UserPaysUnavailableError,
+  type WalletTransactionRequest,
+} from '@/lib/privy/walletTransaction';
+
+export type { WalletTransactionRequest };
 
 const BASE_CHAIN_ID = 8453;
 const BASE_CHAIN_ID_HEX = '0x2105';
-
-export type WalletTransactionRequest = {
-  to: Address;
-  data: Hex;
-  value: bigint;
-};
 
 function toHexQuantity(value: bigint): Hex {
   return `0x${value.toString(16)}`;
@@ -24,6 +26,7 @@ function asAddress(value: string | undefined): Address | null {
 }
 
 export function useWalletTransaction() {
+  const { getAccessToken } = usePrivy();
   const { wallets } = useEmbeddedEthereumWallet();
   const wallet = wallets[0];
   const address = asAddress(wallet?.address);
@@ -39,7 +42,7 @@ export function useWalletTransaction() {
     const accounts = (await provider.request({
       method: 'eth_requestAccounts',
     })) as string[];
-    const from = accounts[0];
+    const from = asAddress(accounts[0]) ?? address;
     if (!from) {
       throw new Error('No wallet is linked to this account yet.');
     }
@@ -51,6 +54,17 @@ export function useWalletTransaction() {
       });
     } catch {
       // Some embedded wallets are already on Base or do not implement switch.
+    }
+
+    const accessToken = await getAccessToken();
+    if (accessToken) {
+      try {
+        return await sendUserPaysTransaction(accessToken, from, request);
+      } catch (error) {
+        if (!(error instanceof UserPaysUnavailableError)) {
+          throw error;
+        }
+      }
     }
 
     const hash = (await provider.request({

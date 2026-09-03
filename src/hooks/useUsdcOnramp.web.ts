@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { USDC_ON_BASE } from '@/constants/tradeAssets';
 
 const BASE_CAIP2 = 'eip155:8453' as const;
-const DEFAULT_USD_AMOUNT = '50';
+const DEFAULT_USD_AMOUNT = '5';
 
 export function useUsdcOnramp() {
   const { fund } = useFiatOnramp();

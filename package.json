@@ -18,6 +18,7 @@
     "@expo/vector-icons": "^15.1.1",
     "@privy-io/expo": "^0.70.11",
     "@privy-io/expo-native-extensions": "^0.0.12",
+    "@privy-io/node": "^0.34.0",
     "@privy-io/react-auth": "^3.37.4",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^7.18.17",

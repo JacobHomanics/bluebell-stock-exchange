@@ -1,13 +1,19 @@
 import { getAddress, isAddress, type Address, type Hex } from 'viem';
-import { useSendTransaction, useWallets } from '@privy-io/react-auth';
+import {
+  usePrivy,
+  useSendTransaction,
+  useWallets,
+} from '@privy-io/react-auth';
+
+import {
+  sendUserPaysTransaction,
+  UserPaysUnavailableError,
+  type WalletTransactionRequest,
+} from '@/lib/privy/walletTransaction';
+
+export type { WalletTransactionRequest };
 
 const BASE_CHAIN_ID = 8453;
-
-export type WalletTransactionRequest = {
-  to: Address;
-  data: Hex;
-  value: bigint;
-};
 
 function asAddress(value: string | undefined): Address | null {
   if (!value || !isAddress(value)) {
@@ -17,6 +23,7 @@ function asAddress(value: string | undefined): Address | null {
 }
 
 export function useWalletTransaction() {
+  const { getAccessToken } = usePrivy();
   const { sendTransaction: send } = useSendTransaction();
   const { wallets } = useWallets();
   const wallet =
@@ -31,6 +38,19 @@ export function useWalletTransaction() {
         await wallet.switchChain(BASE_CHAIN_ID);
       } catch {
         // Wallet may already be on Base.
+      }
+    }
+
+    if (address) {
+      const accessToken = await getAccessToken();
+      if (accessToken) {
+        try {
+          return await sendUserPaysTransaction(accessToken, address, request);
+        } catch (error) {
+          if (!(error instanceof UserPaysUnavailableError)) {
+            throw error;
+          }
+        }
       }
     }
 

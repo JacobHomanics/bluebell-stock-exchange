@@ -9,6 +9,7 @@ module.exports = defineConfig([
       '.expo/**',
       '**/dist/**',
       '**/build/**',
+      'api/**',
       'ios/**',
       'android/**',
       '*.config.js',
