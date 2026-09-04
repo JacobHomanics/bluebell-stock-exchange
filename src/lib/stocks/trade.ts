@@ -75,13 +75,13 @@ export function swapErrorMessage(error: unknown): string {
     return 'The swap transaction reverted. Try a fresh quote.';
   }
   if (/insufficient balance/i.test(text)) {
-    return 'Not enough USDC to cover this trade and gas.';
+    return 'Not enough USDC to cover this trade.';
   }
   if (
     /insufficient funds for gas/i.test(text) ||
     /insufficient funds/i.test(text)
   ) {
-    return 'Not enough USDC to pay gas. Add a little USDC, then try again.';
+    return 'Not enough funds to pay gas. Try again.';
   }
 
   return 'Swap failed. Check gas, allowance, and try again.';

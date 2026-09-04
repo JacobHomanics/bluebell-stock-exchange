@@ -1,5 +1,7 @@
-import { Platform } from 'react-native';
+import { ConvexHttpClient } from 'convex/browser';
 import type { Address, Hex } from 'viem';
+
+import { api } from '../../../convex/_generated/api';
 
 export type WalletTransactionRequest = {
   to: Address;
@@ -7,10 +9,10 @@ export type WalletTransactionRequest = {
   value: bigint;
 };
 
-export class UserPaysUnavailableError extends Error {
-  constructor(message = 'User-pays gas is not available.') {
+export class SponsoredTransactionUnavailableError extends Error {
+  constructor(message = 'App-pays gas sponsorship is not available.') {
     super(message);
-    this.name = 'UserPaysUnavailableError';
+    this.name = 'SponsoredTransactionUnavailableError';
   }
 }
 
@@ -18,69 +20,50 @@ function toHexQuantity(value: bigint): Hex {
   return `0x${value.toString(16)}`;
 }
 
-function apiOrigin(): string {
-  if (
-    Platform.OS === 'web' &&
-    typeof window !== 'undefined' &&
-    window.location?.origin
-  ) {
-    return window.location.origin;
-  }
-
-  return process.env.EXPO_PUBLIC_APP_ORIGIN?.replace(/\/$/, '') ?? '';
+function convexUrl(): string {
+  return process.env.EXPO_PUBLIC_CONVEX_URL?.replace(/\/$/, '') ?? '';
 }
 
-export async function sendUserPaysTransaction(
-  accessToken: string,
+function isUnavailable(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    /network|failed to fetch|load failed|could not find public function|does not exist/i.test(
+      message,
+    )
+  );
+}
+
+export async function sendSponsoredTransaction(
   from: Address,
   request: WalletTransactionRequest,
 ): Promise<Hex> {
-  const origin = apiOrigin();
-  if (!origin.startsWith('http')) {
-    throw new UserPaysUnavailableError();
+  const url = convexUrl();
+  if (!url.startsWith('https://')) {
+    throw new SponsoredTransactionUnavailableError();
   }
 
-  let response: Response;
+  const client = new ConvexHttpClient(url);
+
+  let payload: { hash: string };
   try {
-    response = await fetch(`${origin}/api/send-transaction`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from,
-        to: request.to,
-        data: request.data,
-        value: toHexQuantity(request.value),
-      }),
+    payload = await client.action(api.sendTransaction.sendSponsored, {
+      from,
+      to: request.to,
+      data: request.data,
+      value: toHexQuantity(request.value),
     });
-  } catch {
-    throw new UserPaysUnavailableError();
-  }
-
-  if (response.status === 404 || response.status === 405) {
-    throw new UserPaysUnavailableError();
-  }
-
-  const payload = (await response.json().catch(() => null)) as {
-    hash?: unknown;
-    error?: unknown;
-  } | null;
-
-  if (!response.ok) {
+  } catch (error) {
+    if (isUnavailable(error)) {
+      throw new SponsoredTransactionUnavailableError();
+    }
     const message =
-      payload && typeof payload.error === 'string'
-        ? payload.error
+      error instanceof Error && error.message.length > 0
+        ? error.message
         : 'Failed to send the transaction.';
     throw new Error(message);
   }
 
-  if (
-    !payload ||
-    typeof payload.hash !== 'string' ||
-    !payload.hash.startsWith('0x')
-  ) {
+  if (!payload.hash.startsWith('0x')) {
     throw new Error('Wallet did not return a transaction hash.');
   }
 

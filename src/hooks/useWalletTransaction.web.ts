@@ -1,13 +1,9 @@
 import { getAddress, isAddress, type Address, type Hex } from 'viem';
-import {
-  usePrivy,
-  useSendTransaction,
-  useWallets,
-} from '@privy-io/react-auth';
+import { useSendTransaction, useWallets } from '@privy-io/react-auth';
 
 import {
-  sendUserPaysTransaction,
-  UserPaysUnavailableError,
+  sendSponsoredTransaction,
+  SponsoredTransactionUnavailableError,
   type WalletTransactionRequest,
 } from '@/lib/privy/walletTransaction';
 
@@ -23,7 +19,6 @@ function asAddress(value: string | undefined): Address | null {
 }
 
 export function useWalletTransaction() {
-  const { getAccessToken } = usePrivy();
   const { sendTransaction: send } = useSendTransaction();
   const { wallets } = useWallets();
   const wallet =
@@ -42,14 +37,11 @@ export function useWalletTransaction() {
     }
 
     if (address) {
-      const accessToken = await getAccessToken();
-      if (accessToken) {
-        try {
-          return await sendUserPaysTransaction(accessToken, address, request);
-        } catch (error) {
-          if (!(error instanceof UserPaysUnavailableError)) {
-            throw error;
-          }
+      try {
+        return await sendSponsoredTransaction(address, request);
+      } catch (error) {
+        if (!(error instanceof SponsoredTransactionUnavailableError)) {
+          throw error;
         }
       }
     }

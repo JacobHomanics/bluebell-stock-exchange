@@ -1,11 +1,11 @@
 import type { Address, Hex } from 'viem';
 import { getAddress, isAddress } from 'viem';
 
-import { useEmbeddedEthereumWallet, usePrivy } from '@privy-io/expo';
+import { useEmbeddedEthereumWallet } from '@privy-io/expo';
 
 import {
-  sendUserPaysTransaction,
-  UserPaysUnavailableError,
+  sendSponsoredTransaction,
+  SponsoredTransactionUnavailableError,
   type WalletTransactionRequest,
 } from '@/lib/privy/walletTransaction';
 
@@ -26,7 +26,6 @@ function asAddress(value: string | undefined): Address | null {
 }
 
 export function useWalletTransaction() {
-  const { getAccessToken } = usePrivy();
   const { wallets } = useEmbeddedEthereumWallet();
   const wallet = wallets[0];
   const address = asAddress(wallet?.address);
@@ -56,14 +55,11 @@ export function useWalletTransaction() {
       // Some embedded wallets are already on Base or do not implement switch.
     }
 
-    const accessToken = await getAccessToken();
-    if (accessToken) {
-      try {
-        return await sendUserPaysTransaction(accessToken, from, request);
-      } catch (error) {
-        if (!(error instanceof UserPaysUnavailableError)) {
-          throw error;
-        }
+    try {
+      return await sendSponsoredTransaction(from, request);
+    } catch (error) {
+      if (!(error instanceof SponsoredTransactionUnavailableError)) {
+        throw error;
       }
     }
 

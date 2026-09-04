@@ -8,13 +8,19 @@
  * @module
  */
 
+import type * as lib_privy from "../lib/privy.js";
+import type * as sendTransaction from "../sendTransaction.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  "lib/privy": typeof lib_privy;
+  sendTransaction: typeof sendTransaction;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

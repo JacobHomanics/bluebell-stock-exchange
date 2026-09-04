@@ -262,7 +262,18 @@ export function HomeScreen() {
                   <StockRow
                     key={holding.quote.symbol}
                     detail={`${formatShares(holding.amount)} shares`}
+                    onBuy={() => {
+                      navigation.getParent()?.navigate('trade', {
+                        toSymbol: holding.quote.symbol,
+                      });
+                    }}
                     onPress={() => {
+                      navigation.getParent()?.navigate('trade', {
+                        fromSymbol: holding.quote.symbol,
+                        toSymbol: 'USDC',
+                      });
+                    }}
+                    onSell={() => {
                       navigation.getParent()?.navigate('trade', {
                         fromSymbol: holding.quote.symbol,
                         toSymbol: 'USDC',

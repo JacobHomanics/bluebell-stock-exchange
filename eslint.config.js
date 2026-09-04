@@ -13,6 +13,7 @@ module.exports = defineConfig([
       'ios/**',
       'android/**',
       '*.config.js',
+      'convex/_generated/**',
     ],
   },
 ]);

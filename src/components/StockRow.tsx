@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -10,9 +11,18 @@ type StockRowProps = {
   detail?: string;
   valueLabel?: string;
   onPress?: () => void;
+  onBuy: () => void;
+  onSell: () => void;
 };
 
-export function StockRow({ quote, detail, valueLabel, onPress }: StockRowProps) {
+export function StockRow({
+  quote,
+  detail,
+  valueLabel,
+  onPress,
+  onBuy,
+  onSell,
+}: StockRowProps) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [logoFailed, setLogoFailed] = useState(false);
@@ -22,7 +32,7 @@ export function StockRow({ quote, detail, valueLabel, onPress }: StockRowProps) 
   const subtitle = detail ?? quote.name;
   const accessibilityLabel = `${quote.symbol}, ${subtitle}, ${trailingLabel}`;
 
-  const body = (
+  const identity = (
     <>
       {logoFailed ? (
         <View style={styles.logoFallback}>
@@ -50,22 +60,43 @@ export function StockRow({ quote, detail, valueLabel, onPress }: StockRowProps) 
     </>
   );
 
-  if (onPress) {
-    return (
-      <Pressable
-        accessibilityLabel={accessibilityLabel}
-        accessibilityRole="button"
-        onPress={onPress}
-        style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-      >
-        {body}
-      </Pressable>
-    );
-  }
-
   return (
-    <View accessibilityLabel={accessibilityLabel} style={styles.row}>
-      {body}
+    <View style={styles.row}>
+      {onPress ? (
+        <Pressable
+          accessibilityLabel={accessibilityLabel}
+          accessibilityRole="button"
+          onPress={onPress}
+          style={({ pressed }) => [styles.main, pressed && styles.pressed]}
+        >
+          {identity}
+        </Pressable>
+      ) : (
+        <View accessibilityLabel={accessibilityLabel} style={styles.main}>
+          {identity}
+        </View>
+      )}
+
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityLabel={`Buy ${quote.symbol}`}
+          accessibilityRole="button"
+          hitSlop={4}
+          onPress={onBuy}
+          style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+        >
+          <Ionicons color={colors.brand} name="add-circle" size={26} />
+        </Pressable>
+        <Pressable
+          accessibilityLabel={`Sell ${quote.symbol}`}
+          accessibilityRole="button"
+          hitSlop={4}
+          onPress={onSell}
+          style={({ pressed }) => [styles.action, pressed && styles.pressed]}
+        >
+          <Ionicons color={colors.error} name="remove-circle" size={26} />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -81,6 +112,13 @@ function createStyles(colors: AppThemeColors) {
       borderRadius: 14,
       paddingHorizontal: 14,
       paddingVertical: 12,
+      gap: 10,
+    },
+    main: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: 12,
     },
     logo: {
@@ -121,6 +159,17 @@ function createStyles(colors: AppThemeColors) {
       fontSize: 16,
       fontWeight: '600',
       fontVariant: ['tabular-nums'],
+    },
+    actions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+    },
+    action: {
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     pressed: {
       opacity: 0.85,
