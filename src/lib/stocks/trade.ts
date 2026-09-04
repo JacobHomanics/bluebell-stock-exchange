@@ -11,6 +11,13 @@ import { SwapQuoteError } from '@/lib/stocks/lifi';
 
 export type TradeInputUnit = 'usd' | 'token';
 
+export function isBelowMinSwapUsd(
+  usd: number | null,
+  minSwapUsd: number,
+): boolean {
+  return usd == null || !Number.isFinite(usd) || usd < minSwapUsd;
+}
+
 export function defaultFromAsset(fromSymbol?: string): TradeAsset {
   return getTradeAsset(fromSymbol) ?? USDC_ON_BASE;
 }

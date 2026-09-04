@@ -10,6 +10,7 @@
 
 import type * as lib_privy from "../lib/privy.js";
 import type * as sendTransaction from "../sendTransaction.js";
+import type * as tradeConfig from "../tradeConfig.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +21,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "lib/privy": typeof lib_privy;
   sendTransaction: typeof sendTransaction;
+  tradeConfig: typeof tradeConfig;
 }>;
 
 /**

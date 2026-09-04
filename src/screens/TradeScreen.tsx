@@ -3,7 +3,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AssetChip } from '@/components/AssetChip';
@@ -13,6 +13,7 @@ import type { AppThemeColors } from '@/constants/theme';
 import { TRADE_ASSETS, type TradeAsset } from '@/constants/tradeAssets';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useAuth } from '@/hooks/useAuth';
+import { useMinSwapUsd } from '@/hooks/useMinSwapUsd';
 import { useSwapQuote } from '@/hooks/useSwapQuote';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { useTokenizedStockQuotes } from '@/hooks/useTokenizedStockQuotes';
@@ -35,6 +36,7 @@ import {
   defaultFromAsset,
   defaultToAsset,
   inputAssetUsdValue,
+  isBelowMinSwapUsd,
   type TradeInputUnit,
 } from '@/lib/stocks/trade';
 import type { RootStackParamList } from '@/navigation/types';
@@ -49,6 +51,7 @@ export function TradeScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'trade'>>();
   const { isAuthenticated } = useAuth();
+  const minSwapUsd = useMinSwapUsd();
   const { address } = useWalletTransaction();
   const { quotes } = useTokenizedStockQuotes();
 
@@ -61,6 +64,7 @@ export function TradeScreen() {
   const [amount, setAmount] = useState('');
   const [inputUnit, setInputUnit] = useState<TradeInputUnit>('usd');
   const [picker, setPicker] = useState<PickerTarget>(null);
+  const [minAmountVisible, setMinAmountVisible] = useState(false);
 
   const fromPriceUsd = assetPriceUsd(fromAsset, quotes);
   const fromIsStock = fromAsset.kind === 'stock';
@@ -176,6 +180,14 @@ export function TradeScreen() {
 
   const handleReview = () => {
     if (reviewDisabled) {
+      return;
+    }
+    if (minSwapUsd == null) {
+      return;
+    }
+    const swapUsd = amountAsUsd ? parseUsdInput(amount) : parsedUsd;
+    if (isBelowMinSwapUsd(swapUsd, minSwapUsd)) {
+      setMinAmountVisible(true);
       return;
     }
     navigation.navigate('tradeConfirm', {
@@ -372,6 +384,46 @@ export function TradeScreen() {
         title={picker === 'to' ? 'Receive' : 'Pay with'}
         visible={picker != null}
       />
+
+      <Modal
+        animationType="fade"
+        onRequestClose={() => {
+          setMinAmountVisible(false);
+        }}
+        transparent
+        visible={minAmountVisible}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable
+            accessibilityLabel="Close minimum amount"
+            accessibilityRole="button"
+            onPress={() => {
+              setMinAmountVisible(false);
+            }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View accessibilityViewIsModal style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Minimum amount</Text>
+            <Text style={styles.modalBody}>
+              {minSwapUsd == null
+                ? 'Enter a larger amount to continue.'
+                : `Swaps must be at least ${formatUsd(minSwapUsd)}. Enter a larger amount to continue.`}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setMinAmountVisible(false);
+              }}
+              style={({ pressed }) => [
+                styles.modalButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.modalButtonText}>Got it</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -520,6 +572,50 @@ function createStyles(colors: AppThemeColors) {
       fontSize: 16,
       fontWeight: '600',
       textAlign: 'center',
+    },
+    modalBackdrop: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    },
+    modalCard: {
+      zIndex: 1,
+      width: '100%',
+      maxWidth: 360,
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 16,
+      paddingHorizontal: 20,
+      paddingVertical: 20,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    modalBody: {
+      marginTop: 10,
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.textSecondary,
+    },
+    modalButton: {
+      marginTop: 20,
+      alignSelf: 'flex-start',
+      minWidth: 100,
+      alignItems: 'center',
+      backgroundColor: colors.brand,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 10,
+    },
+    modalButtonText: {
+      color: colors.onBrand,
+      fontSize: 16,
+      fontWeight: '600',
     },
   });
 }

@@ -18,6 +18,7 @@ import { AssetChip } from '@/components/AssetChip';
 import type { AppThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useAuth } from '@/hooks/useAuth';
+import { useMinSwapUsd } from '@/hooks/useMinSwapUsd';
 import { useSwapQuote } from '@/hooks/useSwapQuote';
 import { useTokenBalance } from '@/hooks/useTokenBalance';
 import { useTokenizedStockQuotes } from '@/hooks/useTokenizedStockQuotes';
@@ -44,6 +45,7 @@ import {
   defaultFromAsset,
   defaultToAsset,
   inputAssetUsdValue,
+  isBelowMinSwapUsd,
   swapErrorMessage,
 } from '@/lib/stocks/trade';
 import type { RootStackParamList } from '@/navigation/types';
@@ -58,6 +60,7 @@ export function TradeConfirmScreen() {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'tradeConfirm'>>();
   const { isAuthenticated } = useAuth();
+  const minSwapUsd = useMinSwapUsd();
   const { address, sendTransaction } = useWalletTransaction();
   const { quotes } = useTokenizedStockQuotes();
 
@@ -153,6 +156,13 @@ export function TradeConfirmScreen() {
       setSwapError(`Not enough ${fromAsset.symbol}.`);
       return;
     }
+    if (minSwapUsd == null) {
+      return;
+    }
+    if (isBelowMinSwapUsd(parsedUsd, minSwapUsd)) {
+      setSwapError(`Minimum swap is ${formatUsd(minSwapUsd)}.`);
+      return;
+    }
 
     setSwapError(null);
     setReceivedAmount(null);
@@ -216,6 +226,7 @@ export function TradeConfirmScreen() {
   };
 
   const submitDisabled =
+    minSwapUsd == null ||
     phase === 'approving' ||
     phase === 'swapping' ||
     (isAuthenticated && !address) ||

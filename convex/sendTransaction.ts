@@ -52,11 +52,11 @@ function privyErrorMessage(error: unknown): string {
 
 async function resolveWalletId(
   privy: PrivyClient,
-  address: string,
+  from: string,
 ): Promise<string> {
-  const wallet = await privy.wallets().getWalletByAddress({ address });
+  const wallet = await privy.wallets().getWalletByAddress({ address: from });
   if (!wallet?.id) {
-    throw new Error(`Could not resolve Privy wallet id for ${address}`);
+    throw new Error("No Privy embedded wallet found for this account.");
   }
   return wallet.id;
 }
@@ -116,8 +116,8 @@ export const sendSponsored = action({
 
     try {
       const privy = getPrivyClient();
-      const authorizationContext = getAuthorizationContext();
       const walletId = await resolveWalletId(privy, args.from);
+      const authorizationContext = getAuthorizationContext();
 
       // App pays: sponsor: true with no sponsor_options.
       const sent = await privy.wallets().ethereum().sendTransaction(walletId, {

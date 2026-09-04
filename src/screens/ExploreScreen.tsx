@@ -59,20 +59,9 @@ export function ExploreScreen() {
         {quotes.map((quote) => (
           <StockRow
             key={quote.symbol}
-            onBuy={() => {
-              navigation.getParent()?.navigate('trade', {
-                toSymbol: quote.symbol,
-              });
-            }}
             onPress={() => {
               navigation.getParent()?.navigate('trade', {
                 toSymbol: quote.symbol,
-              });
-            }}
-            onSell={() => {
-              navigation.getParent()?.navigate('trade', {
-                fromSymbol: quote.symbol,
-                toSymbol: 'USDC',
               });
             }}
             quote={quote}

@@ -13,7 +13,10 @@ export function getPrivyClient(): PrivyClient {
   });
 }
 
-/** Authorization context for server-driven wallet sends. */
+/**
+ * Authorization context for server-driven wallet sends.
+ * Private key: Convex env `PRIVY_AUTHORIZATION_PRIVATE_KEY`.
+ */
 export function getAuthorizationContext(): AuthorizationContext {
   const authorizationPrivateKey = env.PRIVY_AUTHORIZATION_PRIVATE_KEY?.trim();
   if (!authorizationPrivateKey) {
