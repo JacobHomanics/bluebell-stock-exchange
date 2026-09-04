@@ -77,4 +77,27 @@ export const TOKENIZED_STOCKS: readonly TokenizedStock[] = [
     logoUri:
       'https://metadata.coinbase.com/equity_icons/fe40327c3d69c3c210e6d2b0819e69514f5be58dff6605507583170b7bb14790.png',
   },
+  {
+    symbol: 'MSTRc',
+    name: 'Strategy Inc.',
+    tokenAddress: '0xb2000000000000000000004884b426556b92883d',
+    priceFeedAddress: '0xB3cE282CD188b35DA0E38D8Bc7d58e33173D202a',
+    logoUri:
+      'https://metadata.coinbase.com/equity_icons/496024423dd795f8b547ffa0668f12a1e6bf09af247534754546a1a6661c7969.png',
+  },
+  {
+    symbol: 'SNDKc',
+    name: 'Sandisk Corporation',
+    tokenAddress: '0xb200000000000000000000397293Cb8cda9a10c5',
+    priceFeedAddress: '0x388b0dC46C0Fb05A74BeE0994fa5b02c6Fcca2eA',
+    logoUri:
+      'https://metadata.coinbase.com/equity_icons/495de6bc9902690826d533b9506494890f59d611d10f04231c00936f659bb0cb.png',
+  },
+  {
+    symbol: 'SPCXc',
+    name: 'Space Exploration Technologies Corp.',
+    tokenAddress: '0xb2000000000000000000007b9fcbd005511aCBd5',
+    priceFeedAddress: '0x6A634B235903C4ad6376892180d6fF8612e3Fa68',
+    logoUri: 'https://financialmodelingprep.com/image-stock/SPCX.png',
+  },
 ];
